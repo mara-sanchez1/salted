@@ -1,0 +1,44 @@
+cat > .gitignore <<'EOF'
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.dist-info/
+build/
+dist/
+
+# ---- Virtual envs ----
+.venv/
+venv/
+env/
+.env
+.conda/
+condaenv*.requirements.txt
+
+# ---- Jupyter ----
+.ipynb_checkpoints/
+
+# ---- OS / editor ----
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ---- Data & outputs ----
+outputs/
+cache/
+*.log
+
+# If you DON'T want to commit large/local data files:
+data/
+# If you DO want to keep the folder but not the big files, use instead:
+# data/*
+# !data/README.md
+
+# ---- Geospatial temp files ----
+*.gpkg-journal
+*.shp.xml
+EOF

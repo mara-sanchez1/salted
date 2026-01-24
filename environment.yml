@@ -1,0 +1,32 @@
+name: salted
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+
+  # Core
+  - pandas>=2.2
+  - numpy>=1.26
+  - requests>=2.31
+
+  # Geo stack
+  - geopandas>=0.14
+  - shapely>=2.0
+  - pyproj>=3.6
+  - pyogrio>=0.8
+  - rtree>=1.2
+
+  # ML
+  - scikit-learn>=1.4
+
+  # Mapping / OSM
+  - folium>=0.16
+  - osmnx>=2.0
+
+  # Notebooks (optional)
+  - jupyterlab>=4.0
+  - ipykernel>=6.29
+
+  # Dev tooling (optional)
+  - black>=24.0
+  - ruff>=0.5
