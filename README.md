@@ -37,6 +37,27 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
+## How to Run
+
+### 1. Create Environment
+```bash
+conda env create -f environment.yml
+conda activate salted
+```
+### 2. Run with real weather
+```bash
+python scripts/run_pipeline.py --outdir outputs --round-output
+```
+### 3. Run demo scenario (freezing rain)
+```bash
+python scripts/run_pipeline.py \
+  --outdir outputs \
+  --export-csv \
+  --round-output \
+  --demo-freezing-rain
+```
+This simulates 0 °C and recent precipitation, and it identifies structurally dangerous streets
+
 ## Data Source
 
 [City of Vancouver Open Data Portal](https://opendata.vancouver.ca/explore/dataset/pavement-condition-rating/)
