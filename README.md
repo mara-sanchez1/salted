@@ -6,6 +6,12 @@ SALTED predicts black ice risk across Vancouver's road network by combining pave
 
 > Hackathon Project 2026
 
+## Demo Video
+
+[![SALTED Demo Video](https://cdn.loom.com/sessions/thumbnails/8c3c0934beef4601bfacd5c9ee27a628-fcfb08cdb3188cc7-full.jpg#t=0.1)](https://www.loom.com/share/8c3c0934beef4601bfacd5c9ee27a628)
+
+🎥 Click the image above to watch a short demo of SALTED in action.
+
 ## Features
 
 - Interactive road condition map using PyDeck
