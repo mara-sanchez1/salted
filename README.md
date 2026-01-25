@@ -15,9 +15,21 @@ SALTED predicts black ice risk across Vancouver's road network by combining pave
 
 ## Risk Model
 
+The black ice risk score is computed as a weighted combination of
+environmental and infrastructure features:
+
 ```python
-black_ice_risk = 0.35 * temp_near_zero + 0.25 * recent_moisture + 0.15 * humidity_proxy+ 0.15 * sun_exposure + 0.15 * pavement_risk_adj + 0.30 * is_bridge
+black_ice_risk = (
+    0.35 * temp_near_zero +
+    0.25 * recent_moisture +
+    0.15 * humidity_proxy +
+    0.15 * sun_exposure +
+    0.15 * pavement_risk_adj +
+    0.30 * is_bridge
+)
 ```
+The final score is clipped to the range [0, 1].
+All features are normalized internally for scoring, but raw values are preserved in outputs for transparency.
 
 ### Features Used
 
@@ -29,6 +41,23 @@ black_ice_risk = 0.35 * temp_near_zero + 0.25 * recent_moisture + 0.15 * humidit
 | `sun_exposure` | Solar exposure based on street orientation |
 | `is_bridge` | Bridge segment indicator |
 | `pavement_risk_adj` | Pavement condition risk score |
+
+## Risk Model Assumptions
+
+The current black ice risk model is heuristic and rule-based.
+
+All feature weights were chosen based on:
+- Domain intuition from transportation safety and winter road conditions
+- Relative importance suggested by public safety literature
+- Engineering judgment rather than labeled ground-truth data
+
+No supervised labels (e.g., confirmed black ice incidents) were available at
+the time of development.
+
+As a result:
+- The model is intended for relative risk ranking, not absolute prediction
+- Scores should be interpreted comparatively across street segments
+- Weights can be tuned or learned in future iterations
 
 ## Installation
 
@@ -58,11 +87,53 @@ python scripts/run_pipeline.py \
 ```
 This simulates 0 °C and recent precipitation, and it identifies structurally dangerous streets
 
-## Data Source
+## Outputs
 
-[City of Vancouver Open Data Portal](https://opendata.vancouver.ca/explore/dataset/pavement-condition-rating/)
+File                         | Description
+-----------------------------|---------------------------------------------
+outputs/top20.csv            | Highest-risk street segments
+outputs/final_segments.csv   | Full dataset (no geometry)
+outputs/final_segments.gpkg  | Full geospatial dataset
+outputs/risk_map.html        | Interactive map (hover for details)
+
+## Data Sources
+
+City of Vancouver Open Data Portal
+- Pavement Condition Rating dataset
+- Contains street segment geometries and PCI scores
+- Used to estimate surface vulnerability
+
+Dataset:
+https://opendata.vancouver.ca/explore/dataset/pavement-condition-rating/
+
+API documentation (Opendatasoft):
+https://help.opendatasoft.com/apis/ods-search-v2/
+
+Field descriptions:
+https://opendata.vancouver.ca/explore/dataset/pavement-condition-rating/information/
+
+
+OpenStreetMap (via OSMnx)
+- Water bodies (oceans, rivers, lakes)
+- Bridge infrastructure
+
+OSM:
+https://www.openstreetmap.org/
+
+OSMnx docs:
+https://osmnx.readthedocs.io/
+
+
+Open-Meteo Weather API
+- Near-real-time temperature
+- Recent precipitation (1h / 6h)
+
+API docs:
+https://open-meteo.com/en/docs
 
 ## Acknowledgments
 
 - City of Vancouver Open Data Portal
-- Streamlit & PyDeck
+- OpenStreetMap contributors
+- Open-Meteo Weather API
+- GeoPandas, OSMnx, Folium
