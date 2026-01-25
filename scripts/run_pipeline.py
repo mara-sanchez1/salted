@@ -50,6 +50,7 @@ from src.model.risk import normalize_columns, compute_black_ice_risk
 from src.geo.water import add_water_proximity_features
 from src.geo.bridges import add_bridge_flag
 from src.viz.map_folium import export_risk_map_html
+from src.viz.route import main as find_route
 
 
 def parse_args() -> argparse.Namespace:
