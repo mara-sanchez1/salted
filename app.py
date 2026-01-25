@@ -271,96 +271,41 @@ def page_data_exploration():
 # =========================
 def page_insights():
     """Insights page with analytics and summaries."""
-    st.title("📊 Insights")
+    st.title("Insights")
     st.write("Analyze trends and patterns in Vancouver's pavement condition data.")
 
-    # Load data for analysis
-    df = load_pavement_data(max_records=25000)
+    st.divider()
 
-    if df.empty:
-        st.warning("No data available for analysis.")
-        return
-
-    # Normalize rating strings
-    df["pci_rating"] = df["pci_rating"].astype(str).str.strip().str.title()
-
-    # Summary metrics
-    st.subheader("Summary Statistics")
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-        st.metric("Total Road Segments", f"{len(df):,}")
-
-    with col2:
-        avg_score = df["pci_score"].mean()
-        st.metric("Average PCI Score", f"{avg_score:.1f}")
-
-    with col3:
-        excellent_pct = (df["pci_rating"] == "Excellent").sum() / len(df) * 100
-        st.metric("Excellent Condition", f"{excellent_pct:.1f}%")
-
-    with col4:
-        poor_pct = ((df["pci_rating"] == "Poor") | (df["pci_rating"] == "Very Poor")).sum() / len(df) * 100
-        st.metric("Poor/Very Poor", f"{poor_pct:.1f}%")
+    # =========================
+    # HTML Embed Section (placeholder)
+    # =========================
+    st.subheader("Visualization")
+    
+    # TODO: Update the HTML file path below
+    html_file_path = "path/to/your/visualization.html"  # <-- UPDATE THIS PATH
+    
+    try:
+        with open(html_file_path, "r", encoding="utf-8") as f:
+            html_content = f.read()
+        components.html(html_content, height=600, scrolling=True)
+    except FileNotFoundError:
+        st.info("HTML visualization placeholder - update the file path in the code to display your visualization.")
 
     st.divider()
 
-    # Rating distribution
-    st.subheader("Pavement Condition Distribution")
-    rating_counts = df["pci_rating"].value_counts()
-
-    # Order ratings logically
-    rating_order = ["Excellent", "Good", "Fair", "Poor", "Very Poor"]
-    rating_counts = rating_counts.reindex([r for r in rating_order if r in rating_counts.index])
-
-    col1, col2 = st.columns([2, 1])
-
-    with col1:
-        st.bar_chart(rating_counts)
-
-    with col2:
-        st.dataframe(
-            rating_counts.reset_index().rename(columns={"index": "Rating", "pci_rating": "Count"}),
-            hide_index=True,
-        )
-
-    st.divider()
-
-    # Year-wise analysis
-    st.subheader("Data by Year")
-    if "year" in df.columns:
-        year_counts = df["year"].value_counts().sort_index()
-        st.bar_chart(year_counts)
-
-    st.divider()
-
-    # Top roads by condition
-    st.subheader("Road Analysis")
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.markdown("**Roads with Lowest PCI Scores (Need Attention)**")
-        worst_roads = (
-            df.groupby("road_name")["pci_score"]
-            .mean()
-            .sort_values()
-            .head(10)
-            .reset_index()
-        )
-        worst_roads.columns = ["Road Name", "Avg PCI Score"]
-        st.dataframe(worst_roads, hide_index=True)
-
-    with col2:
-        st.markdown("**Roads with Highest PCI Scores (Best Condition)**")
-        best_roads = (
-            df.groupby("road_name")["pci_score"]
-            .mean()
-            .sort_values(ascending=False)
-            .head(10)
-            .reset_index()
-        )
-        best_roads.columns = ["Road Name", "Avg PCI Score"]
-        st.dataframe(best_roads, hide_index=True)
+    # =========================
+    # CSV Data Preview Section (placeholder)
+    # =========================
+    st.subheader("Data Preview")
+    
+    # TODO: Update the CSV file path below
+    csv_file_path = "path/to/your/data.csv"  # <-- UPDATE THIS PATH
+    
+    try:
+        csv_df = pd.read_csv(csv_file_path)
+        st.dataframe(csv_df, use_container_width=True)
+    except FileNotFoundError:
+        st.info("CSV data preview placeholder - update the file path in the code to display your data.")
 
 
 # =========================
