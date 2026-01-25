@@ -71,6 +71,11 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--export-geojson", action="store_true", help="Also export GeoJSON (web-friendly, larger file).")
     p.add_argument("--export-csv", action="store_true", help="Also export CSV (no geometry).")
     p.add_argument("--round-output", action="store_true", help="Round numeric columns in final outputs for readability.")
+    p.add_argument(
+        "--demo-freezing-rain",
+        action="store_true",
+        help="DEMO: Override weather to simulate 0°C + recent precipitation",
+    )
     return p.parse_args()
 
 
@@ -113,15 +118,30 @@ def main() -> None:
 
     # 6) Weather now (Open-Meteo)
     w = fetch_weather_now_open_meteo(lat=args.lat, lon=args.lon)
-
+    # Weather values used for DISPLAY (map badge + printout)
+    display_temperature_c = w.temperature_c
+    display_precip_1h_mm = w.precip_last_hour_mm
+    display_precip_6h_mm = w.precip_last_6h_mm
+    
+    # --- DEMO SCENARIO: override DISPLAYED weather only ---
+    if args.demo_freezing_rain:
+        display_temperature_c = 0.0
+        display_precip_1h_mm = 1.0
+        display_precip_6h_mm = 4.0
+        
     # 7) Feature engineering
     gdf = add_pci_risk(gdf, pci_col="PCI Rating")
     gdf = add_bearing_and_sun_exposure(gdf)
     gdf = add_weather_features(gdf, temperature_c=w.temperature_c, precip_6h_mm=w.precip_last_6h_mm)
 
+    # --- DEMO SCENARIO (optional): force freezing rain conditions ---
+    if args.demo_freezing_rain:
+        print("⚠️ DEMO MODE: Simulating 0°C + recent precipitation")
+        gdf["temp_near_zero"] = 1.0
+        gdf["recent_moisture"] = 1
+
     # --- sanity check: dist_to_water_m should be meters BEFORE scaling
     if "dist_to_water_m" in gdf.columns and gdf["dist_to_water_m"].notna().any():
-        # It is totally possible min is near 0, but max should usually be >> 1 meter
         if float(gdf["dist_to_water_m"].max()) <= 1.0:
             raise RuntimeError(
                 "dist_to_water_m is already in [0,1] before scaling. "
@@ -215,13 +235,20 @@ def main() -> None:
     # Output: HTML risk map
     # -------------------------
     map_path = outdir / "risk_map.html"
-    export_risk_map_html(gdf_plot, out_path=str(map_path), sample_n=args.sample_n)
+    export_risk_map_html(
+    gdf_plot,
+    out_path=str(map_path),
+    sample_n=args.sample_n,
+    temperature_c=display_temperature_c,
+    precip_last_1h_mm=display_precip_1h_mm,
+    precip_last_6h_mm=display_precip_6h_mm,
+    )
 
     # Print summary
     print("\n=== Weather (Open-Meteo) ===")
-    print(f"Temperature (°C): {w.temperature_c:.2f}")
-    print(f"Precip last 1h (mm): {w.precip_last_hour_mm:.2f}")
-    print(f"Precip last 6h (mm): {w.precip_last_6h_mm:.2f}")
+    print(f"Temperature (°C): {display_temperature_c:.2f}")
+    print(f"Precip last 1h (mm): {display_precip_1h_mm:.2f}")
+    print(f"Precip last 6h (mm): {display_precip_6h_mm:.2f}")
 
     print("\n=== Outputs ===")
     print(f"Top 20 CSV: {top_csv_path}")
