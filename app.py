@@ -397,37 +397,24 @@ def page_future_directions():
     # =========================
     st.subheader("Planned Enhancements")
     
-    st.markdown("""
-    <style>
-        .future-item { margin-bottom: 1rem; }
-        .future-title { font-weight: 600; color: #1a1a1a; }
-    </style>
+    col1, col2 = st.columns(2)
     
-    <div class="future-item">
-        <p class="future-title">Real-time Route Optimization</p>
-        <p style="color: #666;">Integrate live weather data to dynamically calculate the safest route between two points, minimizing exposure to high black ice risk segments.</p>
-    </div>
+    with col1:
+        st.markdown("**Real-time Route Optimization**")
+        st.caption("Integrate live weather data to dynamically calculate the safest route between two points, minimizing exposure to high black ice risk segments.")
+        
+        st.markdown("**Predictive Alerts**")
+        st.caption("Implement a notification system that warns drivers of hazardous conditions along their planned route based on weather forecasts.")
+        
+        st.markdown("**Mobile Integration**")
+        st.caption("Develop a mobile-friendly interface for real-time navigation with black ice risk awareness.")
     
-    <div class="future-item">
-        <p class="future-title">Multi-factor Cost Function</p>
-        <p style="color: #666;">Develop a routing algorithm that balances travel time, distance, and black ice risk to find optimal paths for different user preferences.</p>
-    </div>
-    
-    <div class="future-item">
-        <p class="future-title">Predictive Alerts</p>
-        <p style="color: #666;">Implement a notification system that warns drivers of hazardous conditions along their planned route based on weather forecasts.</p>
-    </div>
-    
-    <div class="future-item">
-        <p class="future-title">Historical Analysis</p>
-        <p style="color: #666;">Analyze historical accident data to validate and improve the black ice risk model predictions.</p>
-    </div>
-    
-    <div class="future-item">
-        <p class="future-title">Mobile Integration</p>
-        <p style="color: #666;">Develop a mobile-friendly interface for real-time navigation with black ice risk awareness.</p>
-    </div>
-    """, unsafe_allow_html=True)
+    with col2:
+        st.markdown("**Multi-factor Cost Function**")
+        st.caption("Develop a routing algorithm that balances travel time, distance, and black ice risk to find optimal paths for different user preferences.")
+        
+        st.markdown("**Historical Analysis**")
+        st.caption("Analyze historical accident data to validate and improve the black ice risk model predictions.")
 
 
 # =========================
