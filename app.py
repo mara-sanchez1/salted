@@ -271,18 +271,15 @@ def page_data_exploration():
 # =========================
 def page_insights():
     """Insights page with analytics and summaries."""
-    st.title("Insights")
-    st.write("Analyze trends and patterns in Vancouver's pavement condition data.")
+    st.title("Analyze Features with Weather Data.")
 
-    st.divider()
 
     # =========================
-    # HTML Embed Section (placeholder)
+    # HTML Embed Section 
     # =========================
-    st.subheader("Visualization")
+    st.subheader("Feature Engineering Weather Data with Pavement Condition Data.")
     
-    # TODO: Update the HTML file path below
-    html_file_path = "path/to/your/visualization.html"  # <-- UPDATE THIS PATH
+    html_file_path = "outputs/risk_map.html"
     
     try:
         with open(html_file_path, "r", encoding="utf-8") as f:
@@ -291,22 +288,77 @@ def page_insights():
     except FileNotFoundError:
         st.info("HTML visualization placeholder - update the file path in the code to display your visualization.")
 
-    st.divider()
 
     # =========================
-    # CSV Data Preview Section (placeholder)
+    # CSV Data Preview Section 
     # =========================
-    st.subheader("Data Preview")
+    st.subheader("Feature Engineering Data Preview")
     
-    # TODO: Update the CSV file path below
-    csv_file_path = "path/to/your/data.csv"  # <-- UPDATE THIS PATH
+    csv_file_path = "outputs/final_segments.csv"
     
     try:
         csv_df = pd.read_csv(csv_file_path)
         st.dataframe(csv_df, use_container_width=True)
     except FileNotFoundError:
         st.info("CSV data preview placeholder - update the file path in the code to display your data.")
+    
+    st.markdown("""
+    <style>
+        .green-var { color: #2e7d32; font-weight: 600; font-family: monospace; }
+        .feature-section { margin-bottom: 1.5rem; }
+        .section-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; color: #1a1a1a; }
+        .feature-desc { margin-left: 1rem; margin-bottom: 0.3rem; }
+        .model-eq { background-color: #f5f5f5; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 0.9rem; margin: 1rem 0; }
+    </style>
+    
+    <div class="feature-section">
+        <p style="color: #666; margin-bottom: 0.5rem;">Features capturing whether conditions are favorable for ice formation.</p>
+        <ul>
+            <li><span class="green-var">temp_near_zero</span> - A non-linear temperature risk score (0-1) that peaks when air temperature is close to 0°C, where black ice is most likely to form.</li>
+            <li><span class="green-var">recent_moisture</span> - Binary indicator (0/1) capturing whether there has been recent precipitation (rain or snow) in the last 6 hours.</li>
+        </ul>
+    </div>
+    
+    <div class="feature-section">
+        <p style="color: #666; margin-bottom: 0.5rem;">Features approximating how likely moisture persists on the road surface.</p>
+        <ul>
+            <li><span class="green-var">dist_to_water_m</span> - Distance (in meters) from the street segment to the nearest water body (rivers, ocean, lakes). Used as a physical proxy for localized humidity and fog.</li>
+            <li><span class="green-var">humidity_proxy</span> - A derived feature (0-1) computed as an exponential decay of distance to water. Streets closer to water are assumed to have higher ambient moisture.</li>
+        </ul>
+    </div>
+    
+    <div class="feature-section">
+        <p style="color: #666; margin-bottom: 0.5rem;">Features capturing how quickly ice may melt during daylight hours.</p>
+        <ul>
+            <li><span class="green-var">bearing_deg</span> - The orientation of the street segment in degrees (0-360).</li>
+            <li><span class="green-var">sun_exposure</span> - A heuristic score representing expected winter solar exposure based on street orientation. North-facing streets receive less sunlight and are more prone to persistent ice.</li>
+        </ul>
+    </div>
+    
+    <div class="feature-section">
+        <p style="color: #666; margin-bottom: 0.5rem;">Features accounting for structural factors affecting freezing behavior.</p>
+        <ul>
+            <li><span class="green-var">is_bridge</span> - Binary indicator (0/1) identifying bridge segments. Bridges cool faster and freeze earlier due to air exposure on all sides.</li>
+            <li><span class="green-var">pavement_risk_adj</span> - A normalized risk score (0-1) derived from the Pavement Condition Index (PCI). Poorer pavement increases water retention and uneven freezing.</li>
+            <li><span class="green-var">pci_missing</span> - Flag indicating missing pavement condition data, allowing the model to handle incomplete inspections explicitly.</li>
+        </ul>
+    </div>
+    
+    
+    <div class="feature-section">
+        <ul>
+            <li><span class="green-var">black_ice_risk</span> - A composite risk score (0-1) combining all features using weighted contributions. It represents relative risk, not a calibrated probability, and is designed for prioritization.</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
 
+    # Model Equation
+    st.subheader("Model Equation")
+    st.code(
+        "black_ice_risk = 0.35 * temp_near_zero + 0.25 * recent_moisture + 0.15 * humidity_proxy\n"
+        "                + 0.15 * sun_exposure + 0.15 * pavement_risk_adj + 0.30 * is_bridge",
+        language="python"
+    )
 
 # =========================
 # 7) Main App Router
