@@ -32,12 +32,6 @@ outputs/
 cache/
 *.log
 
-# If you DON'T want to commit large/local data files:
-data/
-# If you DO want to keep the folder but not the big files, use instead:
-# data/*
-# !data/README.md
-
 # ---- Geospatial temp files ----
 *.gpkg-journal
 *.shp.xml
