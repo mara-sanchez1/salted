@@ -7,6 +7,7 @@ This version:
 ✅ Draws COLORED ROAD LINES using PyDeck (LineLayer)
 ✅ Handles LineString and MultiLineString geometries
 ✅ Includes clear comments for each section
+✅ Multi-page layout with sidebar navigation
 """
 
 # =========================
@@ -24,16 +25,27 @@ import requests
 # =========================
 st.set_page_config(
     page_title="Vancouver Pavement Condition",
-    page_icon="🛣️",
     layout="wide",
 )
 
-st.title("🛣️ Vancouver Pavement Condition Rating")
-st.write("Explore pavement condition data from the City of Vancouver Open Data Portal.")
+
+# =========================
+# 3) Sidebar Navigation
+# =========================
+st.sidebar.title("Navigation")
+page = st.sidebar.radio(
+    "Select a page:",
+    ["Data Exploration", "Insights"],
+    index=0,
+)
+
+st.sidebar.divider()
+st.sidebar.markdown("**Vancouver Pavement Condition**")
+st.sidebar.caption("Explore pavement condition data from the City of Vancouver Open Data Portal.")
 
 
 # =========================
-# 3) Data Loading (API → DataFrame) with Pagination
+# 4) Data Loading (API → DataFrame) with Pagination
 # =========================
 @st.cache_data
 def load_pavement_data(max_records: int = 1000) -> pd.DataFrame:
@@ -53,7 +65,7 @@ def load_pavement_data(max_records: int = 1000) -> pd.DataFrame:
         "pavement-condition-rating/records"
     )
 
-    page_size = 100  # ✅ ODS cap for this endpoint
+    page_size = 100  
     offset = 0
     records = []
 
@@ -114,109 +126,247 @@ def load_pavement_data(max_records: int = 1000) -> pd.DataFrame:
 
 
 # =========================
-# 4) Load + Clean Data
+# 5) Page: Data Exploration
 # =========================
-df = load_pavement_data(max_records=25000)
+def page_data_exploration():
+    """Data Exploration page with map and data table."""
+    st.title("Preventing Slippery Roads of Vancouver")
+    st.markdown("<p style='font-size: 1.2rem;'>Combining weather patterns with pavement conditions to identify and prevent slippery road hazards across Vancouver.</p>", unsafe_allow_html=True)
 
-if not df.empty:
-    # Normalize rating strings so they match our color_map keys
-    df["pci_rating"] = df["pci_rating"].astype(str).str.strip().str.title()
 
 
-# =========================
-# 5) PyDeck Map (Colored Road Segments)
-# =========================
-st.subheader("Interactive PyDeck Map (Colored Road Segments)")
 
-if df.empty:
-    st.warning("No data available for PyDeck map.")
-else:
-    # --- Color mapping (RGBA makes it extra clear) ---
-    color_map = {
-        "Excellent": [0, 200, 0, 220],
-        "Good": [50, 205, 50, 220],
-        "Fair": [255, 220, 0, 220],
-        "Poor": [255, 140, 0, 220],
-        "Very Poor": [220, 20, 20, 220],
-    }
+    # Load + Clean Data
+    df = load_pavement_data(max_records=10000)
 
-    df["pci_rating"] = df["pci_rating"].astype(str).str.strip().str.title()
-    df["color"] = df["pci_rating"].apply(
-        lambda x: color_map.get(x, [180, 180, 180, 220])
-    )
+    if not df.empty:
+        # Normalize rating strings so they match our color_map keys
+        df["pci_rating"] = df["pci_rating"].astype(str).str.strip().str.title()
 
-    # --- Compute a good map center from the data (so your lines are on-screen) ---
-    # Take the first coordinate of each path as a representative point
-    sample_points = (
-        df["path"]
-        .apply(lambda p: p[0] if isinstance(p, list) and len(p) > 0 else None)
-        .dropna()
-    )
+    # PyDeck Map (Colored Road Segments)
+    st.subheader("Vancouver Interactive Map")
+    st.caption("Source: [City of Vancouver Open Data Portal](https://opendata.vancouver.ca/explore/dataset/pavement-condition-rating/map/?disjunctive.road_name&disjunctive.pci_rating&disjunctive.year)")
 
-    # Each point is [lon, lat]
-    lons = sample_points.apply(lambda pt: pt[0])
-    lats = sample_points.apply(lambda pt: pt[1])
+    if df.empty:
+        st.warning("No data available for PyDeck map.")
+    else:
+        # --- Color mapping (RGBA makes it extra clear) ---
+        color_map = {
+            "Very Good": [0, 200, 0, 220],
+            "Good": [50, 205, 50, 220],
+            "Fair": [255, 220, 0, 220],
+            "Poor": [255, 140, 0, 220],
+            "Very Poor": [220, 20, 20, 220],
+        }
 
-    center_lon = float(lons.mean())
-    center_lat = float(lats.mean())
-
-    # Debug (optional): confirm ranges look like Vancouver
-    with st.expander("Debug: coordinate ranges"):
-        st.write(
-            {
-                "lon_min": float(lons.min()),
-                "lon_max": float(lons.max()),
-                "lat_min": float(lats.min()),
-                "lat_max": float(lats.max()),
-                "center_lon": center_lon,
-                "center_lat": center_lat,
-                "rows": int(len(df)),
-            }
+        df["pci_rating"] = df["pci_rating"].astype(str).str.strip().str.title()
+        df["color"] = df["pci_rating"].apply(
+            lambda x: color_map.get(x, [180, 180, 180, 220])
         )
 
-    # --- Use PathLayer (usually more visible / road-like than LineLayer) ---
-    layer = pdk.Layer(
-        "PathLayer",
-        data=df,
-        get_path="path",
-        get_color="color",
-        width_scale=30,  # makes paths thicker
-        width_min_pixels=3,  # ensures visibility when zoomed out
-        pickable=True,
+        # --- Compute a good map center from the data (so your lines are on-screen) ---
+        # Take the first coordinate of each path as a representative point
+        sample_points = (
+            df["path"]
+            .apply(lambda p: p[0] if isinstance(p, list) and len(p) > 0 else None)
+            .dropna()
+        )
+
+        # Each point is [lon, lat]
+        lons = sample_points.apply(lambda pt: pt[0])
+        lats = sample_points.apply(lambda pt: pt[1])
+
+        center_lon = float(lons.mean())
+        center_lat = float(lats.mean())
+
+        # Debug (optional): confirm ranges look like Vancouver
+        with st.expander("Debug: coordinate ranges"):
+            st.write(
+                {
+                    "lon_min": float(lons.min()),
+                    "lon_max": float(lons.max()),
+                    "lat_min": float(lats.min()),
+                    "lat_max": float(lats.max()),
+                    "center_lon": center_lon,
+                    "center_lat": center_lat,
+                    "rows": int(len(df)),
+                }
+            )
+
+        # --- Use PathLayer (usually more visible / road-like than LineLayer) ---
+        layer = pdk.Layer(
+            "PathLayer",
+            data=df,
+            get_path="path",
+            get_color="color",
+            width_scale=30,  # makes paths thicker
+            width_min_pixels=3,  # ensures visibility when zoomed out
+            pickable=True,
+        )
+
+        # --- View state: center on the data ---
+        view_state = pdk.ViewState(
+            latitude=center_lat,
+            longitude=center_lon,
+            zoom=11.5,
+            pitch=0,
+        )
+
+        deck = pdk.Deck(
+            layers=[layer],
+            initial_view_state=view_state,
+            tooltip={
+                "text": "Road: {road_name}\nRating: {pci_rating}\nScore: {pci_score}\nYear: {year}"
+            },
+        )
+
+        st.pydeck_chart(deck)
+
+        # Styled legend with colored boxes
+        legend_html = """
+        <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; padding: 10px 0;">
+            <span style="font-weight: 600; margin-right: 8px;">Road Condition Legend:</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <div style="width: 16px; height: 16px; background-color: rgb(30, 80, 160); border-radius: 3px;"></div>
+                <span>Very Good</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <div style="width: 16px; height: 16px; background-color: rgb(50, 205, 50); border-radius: 3px;"></div>
+                <span>Good</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <div style="width: 16px; height: 16px; background-color: rgb(255, 220, 0); border-radius: 3px;"></div>
+                <span>Fair</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <div style="width: 16px; height: 16px; background-color: rgb(255, 140, 0); border-radius: 3px;"></div>
+                <span>Poor</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <div style="width: 16px; height: 16px; background-color: rgb(220, 20, 20); border-radius: 3px;"></div>
+                <span>Very Poor</span>
+            </div>
+        </div>
+        """
+        st.markdown(legend_html, unsafe_allow_html=True)
+
+    st.divider()
+
+    # Full Data Table (iframe embed)
+    st.subheader("City of Vancouver Open Data Portal")
+    st.caption("[Source:](https://opendata.vancouver.ca/explore/dataset/pavement-condition-rating/map/?disjunctive.road_name&disjunctive.pci_rating&disjunctive.year)")
+
+    components.iframe(
+        src="https://opendata.vancouver.ca/explore/embed/dataset/pavement-condition-rating/table/"
+        "?disjunctive.road_name&disjunctive.pci_rating&disjunctive.year"
+        "&static=false&datasetcard=false",
+        width=1200,
+        height=500,
+        scrolling=True,
     )
-
-    # --- View state: center on the data ---
-    view_state = pdk.ViewState(
-        latitude=center_lat,
-        longitude=center_lon,
-        zoom=11.5,
-        pitch=0,
-    )
-
-    deck = pdk.Deck(
-        layers=[layer],
-        initial_view_state=view_state,
-        tooltip={
-            "text": "Road: {road_name}\nRating: {pci_rating}\nScore: {pci_score}\nYear: {year}"
-        },
-    )
-
-    st.pydeck_chart(deck)
-    st.markdown("**Legend:** 🟢 Excellent | 🟩 Good | 🟡 Fair | 🟠 Poor | 🔴 Very Poor")
-
-
-st.divider()
 
 
 # =========================
-# 7) Full Data Table (iframe embed)
+# 6) Page: Insights
 # =========================
-st.subheader("Full Data Table")
-components.iframe(
-    src="https://opendata.vancouver.ca/explore/embed/dataset/pavement-condition-rating/table/"
-    "?disjunctive.road_name&disjunctive.pci_rating&disjunctive.year"
-    "&static=false&datasetcard=false",
-    width=1200,
-    height=500,
-    scrolling=True,
-)
+def page_insights():
+    """Insights page with analytics and summaries."""
+    st.title("📊 Insights")
+    st.write("Analyze trends and patterns in Vancouver's pavement condition data.")
+
+    # Load data for analysis
+    df = load_pavement_data(max_records=25000)
+
+    if df.empty:
+        st.warning("No data available for analysis.")
+        return
+
+    # Normalize rating strings
+    df["pci_rating"] = df["pci_rating"].astype(str).str.strip().str.title()
+
+    # Summary metrics
+    st.subheader("Summary Statistics")
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        st.metric("Total Road Segments", f"{len(df):,}")
+
+    with col2:
+        avg_score = df["pci_score"].mean()
+        st.metric("Average PCI Score", f"{avg_score:.1f}")
+
+    with col3:
+        excellent_pct = (df["pci_rating"] == "Excellent").sum() / len(df) * 100
+        st.metric("Excellent Condition", f"{excellent_pct:.1f}%")
+
+    with col4:
+        poor_pct = ((df["pci_rating"] == "Poor") | (df["pci_rating"] == "Very Poor")).sum() / len(df) * 100
+        st.metric("Poor/Very Poor", f"{poor_pct:.1f}%")
+
+    st.divider()
+
+    # Rating distribution
+    st.subheader("Pavement Condition Distribution")
+    rating_counts = df["pci_rating"].value_counts()
+
+    # Order ratings logically
+    rating_order = ["Excellent", "Good", "Fair", "Poor", "Very Poor"]
+    rating_counts = rating_counts.reindex([r for r in rating_order if r in rating_counts.index])
+
+    col1, col2 = st.columns([2, 1])
+
+    with col1:
+        st.bar_chart(rating_counts)
+
+    with col2:
+        st.dataframe(
+            rating_counts.reset_index().rename(columns={"index": "Rating", "pci_rating": "Count"}),
+            hide_index=True,
+        )
+
+    st.divider()
+
+    # Year-wise analysis
+    st.subheader("Data by Year")
+    if "year" in df.columns:
+        year_counts = df["year"].value_counts().sort_index()
+        st.bar_chart(year_counts)
+
+    st.divider()
+
+    # Top roads by condition
+    st.subheader("Road Analysis")
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("**Roads with Lowest PCI Scores (Need Attention)**")
+        worst_roads = (
+            df.groupby("road_name")["pci_score"]
+            .mean()
+            .sort_values()
+            .head(10)
+            .reset_index()
+        )
+        worst_roads.columns = ["Road Name", "Avg PCI Score"]
+        st.dataframe(worst_roads, hide_index=True)
+
+    with col2:
+        st.markdown("**Roads with Highest PCI Scores (Best Condition)**")
+        best_roads = (
+            df.groupby("road_name")["pci_score"]
+            .mean()
+            .sort_values(ascending=False)
+            .head(10)
+            .reset_index()
+        )
+        best_roads.columns = ["Road Name", "Avg PCI Score"]
+        st.dataframe(best_roads, hide_index=True)
+
+
+# =========================
+# 7) Main App Router
+# =========================
+if page == "Data Exploration":
+    page_data_exploration()
+elif page == "Insights":
+    page_insights()
