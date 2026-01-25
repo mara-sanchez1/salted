@@ -32,16 +32,16 @@ st.set_page_config(
 # =========================
 # 3) Sidebar Navigation
 # =========================
-st.sidebar.title("Navigation")
+st.sidebar.title("Menu")
 page = st.sidebar.radio(
     "Select a page:",
-    ["Data Exploration", "Insights"],
+    ["Data Exploration", "Insights", "Future Directions"],
     index=0,
 )
 
 st.sidebar.divider()
-st.sidebar.markdown("**Vancouver Pavement Condition**")
-st.sidebar.caption("Explore pavement condition data from the City of Vancouver Open Data Portal.")
+st.sidebar.markdown("**AI at the edge of innovation**")
+st.sidebar.caption("Hackathon Project 2026")
 
 
 # =========================
@@ -361,9 +361,81 @@ def page_insights():
     )
 
 # =========================
-# 7) Main App Router
+# 7) Page: Future Directions
+# =========================
+def page_future_directions():
+    """Future Directions page with route optimization."""
+    st.title("Future Directions")
+    
+    st.markdown("""
+    <p style='font-size: 1.2rem;'>
+    Searching for the most optimum route based on current state of roads using the black ice risk rating.
+    </p>
+    """, unsafe_allow_html=True)
+    
+    st.divider()
+    
+    # =========================
+    # Route Map Section
+    # =========================
+    st.subheader("Optimized Route Map")
+    st.caption("Route optimization considering black ice risk factors across Vancouver road segments.")
+    
+    route_html_path = "outputs/route_map.html"
+    
+    try:
+        with open(route_html_path, "r", encoding="utf-8") as f:
+            html_content = f.read()
+        components.html(html_content, height=600, scrolling=True)
+    except FileNotFoundError:
+        st.info("Route map placeholder - add your route_map.html file to the outputs folder.")
+    
+    st.divider()
+    
+    # =========================
+    # Future Work Description
+    # =========================
+    st.subheader("Planned Enhancements")
+    
+    st.markdown("""
+    <style>
+        .future-item { margin-bottom: 1rem; }
+        .future-title { font-weight: 600; color: #1a1a1a; }
+    </style>
+    
+    <div class="future-item">
+        <p class="future-title">Real-time Route Optimization</p>
+        <p style="color: #666;">Integrate live weather data to dynamically calculate the safest route between two points, minimizing exposure to high black ice risk segments.</p>
+    </div>
+    
+    <div class="future-item">
+        <p class="future-title">Multi-factor Cost Function</p>
+        <p style="color: #666;">Develop a routing algorithm that balances travel time, distance, and black ice risk to find optimal paths for different user preferences.</p>
+    </div>
+    
+    <div class="future-item">
+        <p class="future-title">Predictive Alerts</p>
+        <p style="color: #666;">Implement a notification system that warns drivers of hazardous conditions along their planned route based on weather forecasts.</p>
+    </div>
+    
+    <div class="future-item">
+        <p class="future-title">Historical Analysis</p>
+        <p style="color: #666;">Analyze historical accident data to validate and improve the black ice risk model predictions.</p>
+    </div>
+    
+    <div class="future-item">
+        <p class="future-title">Mobile Integration</p>
+        <p style="color: #666;">Develop a mobile-friendly interface for real-time navigation with black ice risk awareness.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# =========================
+# 8) Main App Router
 # =========================
 if page == "Data Exploration":
     page_data_exploration()
 elif page == "Insights":
     page_insights()
+elif page == "Future Directions":
+    page_future_directions()
