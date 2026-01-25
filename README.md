@@ -75,10 +75,20 @@ streamlit run app.py
 ## How to Run
 
 ### 1. Create Environment
+
+### Option 1: Conda (recommended)
 ```bash
 conda env create -f environment.yml
 conda activate salted
 ```
+
+### Option 2: Generate `requirements.txt` from conda
+
+```bash
+conda activate salted
+pip freeze > requirements.txt
+```
+
 ### 2. Run with real weather
 ```bash
 python scripts/run_pipeline.py --outdir outputs --round-output
