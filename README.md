@@ -2,7 +2,12 @@
 
 **Preventing Slippery Roads in Vancouver**
 
-SALTED predicts black ice risk across Vancouver's road network by combining pavement condition data with weather features like temperature, moisture, and sun exposure. The model generates a composite risk score for each road segment, enabling safer route planning and targeted winter maintenance.
+SALTED is a geospatial risk modeling tool that predicts black ice risk across Vancouver’s road network by combining pavement condition data with weather context.
+
+By integrating temperature, precipitation, road orientation, and infrastructure features, SALTED generates a **segment-level risk score** to support:
+- Safer route planning
+- Smarter winter road maintenance
+- Data-driven city operations
 
 > Hackathon Project 2026
 
@@ -34,8 +39,9 @@ black_ice_risk = (
     0.30 * is_bridge
 )
 ```
-The final score is clipped to the range [0, 1].
-All features are normalized internally for scoring, but raw values are preserved in outputs for transparency.
+- Final score is clipped to **[0, 1]**
+- Designed for **relative risk ranking**, not absolute prediction
+- All features are normalized internally for scoring, but raw values are preserved in outputs for transparency.
 
 ### Features Used
 
@@ -78,7 +84,7 @@ streamlit run app.py
 
 ### Option 1: Conda (recommended)
 ```bash
-conda env create -f environment.yml
+conda env create -f environment_local.yml
 conda activate salted
 ```
 
@@ -89,7 +95,7 @@ conda activate salted
 pip freeze > requirements.txt
 ```
 
-### 2. Run with real weather
+### 2. Run Pipeline (Real Weather)
 ```bash
 python scripts/run_pipeline.py --outdir outputs --round-output
 ```
@@ -152,4 +158,23 @@ https://open-meteo.com/en/docs
 - City of Vancouver Open Data Portal
 - OpenStreetMap contributors
 - Open-Meteo Weather API
-- GeoPandas, OSMnx, Folium
+- GeoPandas, OSMnx, Folium, Streamlit
+
+## Post-Hackathon Improvements
+
+Following the hackathon, several components of SALTED were refined to improve robustness, usability, and clarity:
+
+- Improved map consistency across all app views using a shared PyDeck rendering pipeline  
+- Enhanced routing visualization with origin/destination markers and clearer legends  
+- Standardized feature engineering outputs and data formatting  
+- Added demo weather context to ensure consistent and reproducible results  
+- Improved UI/UX for better interpretability of risk scores and model inputs  
+
+These refinements focus on making the prototype more reliable, interpretable, and closer to a production-ready system.
+
+## Future Work
+
+- Real-time weather integration
+- Multi-objective routing (time vs risk)
+- Turn-by-turn navigation
+- Integration with accident datasets
