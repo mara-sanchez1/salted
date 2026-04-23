@@ -16,7 +16,7 @@ Features:
 from math import cos, radians, sqrt
 from pathlib import Path
 
-import json
+import geopandas as gpd
 import networkx as nx
 import pandas as pd
 import pydeck as pdk
@@ -158,30 +158,25 @@ def load_pavement_data(max_records: int = 1000) -> pd.DataFrame:
 # 6) Model / Segments Data
 # =========================
 @st.cache_data
-def load_segments_gdf() -> pd.DataFrame:
+def load_segments_gdf() -> gpd.GeoDataFrame:
     """
-    Load road segments with engineered features and risk scores from GeoJSON.
-    Returns a pandas DataFrame with a `geometry` column containing GeoJSON geometry dicts.
+    Load road segments with engineered features and risk scores.
+    Must contain geometry.
     """
     path = Path("outputs/final_segments.geojson")
     if not path.exists():
-        return pd.DataFrame()
+        return gpd.GeoDataFrame()
 
-    with open(path, "r", encoding="utf-8") as f:
-        geojson_data = json.load(f)
+    gdf = gpd.read_file(path)
+    if gdf.empty:
+        return gdf
 
-    features = geojson_data.get("features", [])
-    if not features:
-        return pd.DataFrame()
+    if gdf.crs is None:
+        gdf = gdf.set_crs(epsg=4326)
+    elif gdf.crs.to_epsg() != 4326:
+        gdf = gdf.to_crs(epsg=4326)
 
-    rows = []
-    for feature in features:
-        props = feature.get("properties", {}).copy()
-        props["geometry"] = feature.get("geometry")
-        rows.append(props)
-
-    df = pd.DataFrame(rows)
-
+    # normalize likely numeric columns if present
     for col in [
         "black_ice_risk",
         "pci_score",
@@ -206,18 +201,11 @@ def load_segments_gdf() -> pd.DataFrame:
         "recent_precipitation_mm",
         "rain_mm",
     ]:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
+        if col in gdf.columns:
+            gdf[col] = pd.to_numeric(gdf[col], errors="coerce")
 
-    if "pci_rating" in df.columns:
-        df["pci_rating"] = df["pci_rating"].astype(str).str.strip().str.title()
-    else:
-        df["pci_rating"] = "Unknown"
+    return gdf
 
-    if "road_name" not in df.columns:
-        df["road_name"] = "Unknown"
-
-    return df
 
 @st.cache_data
 def load_segments_table() -> pd.DataFrame:
@@ -237,22 +225,22 @@ def load_segments_table() -> pd.DataFrame:
     return df
 
 
-def get_map_center_from_gdf(gdf: pd.DataFrame):
+def get_map_center_from_gdf(gdf: gpd.GeoDataFrame):
     if gdf.empty:
         return 49.2827, -123.1207
 
     sample_points = []
-    for geom in gdf["geometry"]:
-        if not geom:
+    for geom in gdf.geometry:
+        if geom is None:
             continue
-
-        gtype = geom.get("type")
-        coords = geom.get("coordinates", [])
-
-        if gtype == "LineString" and coords:
-            sample_points.append(coords[0])
-        elif gtype == "MultiLineString" and coords and coords[0]:
-            sample_points.append(coords[0][0])
+        if isinstance(geom, LineString):
+            coords = list(geom.coords)
+            if coords:
+                sample_points.append(coords[0])
+        elif isinstance(geom, MultiLineString):
+            parts = list(geom.geoms)
+            if parts and len(parts[0].coords) > 0:
+                sample_points.append(list(parts[0].coords)[0])
 
     if not sample_points:
         return 49.2827, -123.1207
@@ -263,34 +251,33 @@ def get_map_center_from_gdf(gdf: pd.DataFrame):
 
 
 def geometry_to_path(geom):
-    if not geom:
+    if geom is None:
         return None
 
-    gtype = geom.get("type")
-    coords = geom.get("coordinates", [])
-
-    if gtype == "LineString":
+    if isinstance(geom, LineString):
+        coords = list(geom.coords)
         return [[lon, lat] for lon, lat in coords] if len(coords) > 1 else None
 
-    if gtype == "MultiLineString":
+    if isinstance(geom, MultiLineString):
         longest = None
         longest_len = -1
-        for part in coords:
-            if len(part) > longest_len:
-                longest_len = len(part)
-                longest = part
+        for part in geom.geoms:
+            coords = list(part.coords)
+            if len(coords) > longest_len:
+                longest_len = len(coords)
+                longest = coords
         if longest and len(longest) > 1:
             return [[lon, lat] for lon, lat in longest]
 
     return None
 
 
-def prepare_map_dataframe(gdf: pd.DataFrame) -> pd.DataFrame:
+def prepare_map_dataframe(gdf: gpd.GeoDataFrame) -> pd.DataFrame:
     if gdf.empty:
         return pd.DataFrame()
 
     df = gdf.copy()
-    df["path"] = df["geometry"].apply(geometry_to_path)
+    df["path"] = df.geometry.apply(geometry_to_path)
     df = df[df["path"].notna()].copy()
 
     if "road_name" not in df.columns:
@@ -301,7 +288,7 @@ def prepare_map_dataframe(gdf: pd.DataFrame) -> pd.DataFrame:
     else:
         df["pci_rating"] = "Unknown"
 
-    return df.drop(columns="geometry")
+    return pd.DataFrame(df.drop(columns="geometry"))
 
 
 # =========================
@@ -500,7 +487,7 @@ def build_tooltip(selected_label: str, selected_col: str):
 
 
 def render_shared_map(
-    gdf: pd.DataFrame,
+    gdf: gpd.GeoDataFrame,
     selected_label: str,
     selected_col: str,
     mode: str,
@@ -649,7 +636,8 @@ def build_road_graph():
 
     G = nx.Graph()
 
-    def add_linestring_to_graph(coords, risk: float, row_data: dict):
+    def add_linestring_to_graph(line: LineString, risk: float, row_data: dict):
+        coords = list(line.coords)
         if len(coords) < 2:
             return
 
@@ -677,22 +665,19 @@ def build_road_graph():
             )
 
     for _, row in gdf.iterrows():
-        geom = row["geometry"]
+        geom = row.geometry
         risk = row["black_ice_risk"]
 
         if pd.isna(risk):
             risk = 0.5
 
-        if not geom:
+        if geom is None:
             continue
 
-        gtype = geom.get("type")
-        coords = geom.get("coordinates", [])
-
-        if gtype == "LineString":
-            add_linestring_to_graph(coords, risk, row)
-        elif gtype == "MultiLineString":
-            for part in coords:
+        if isinstance(geom, LineString):
+            add_linestring_to_graph(geom, risk, row)
+        elif isinstance(geom, MultiLineString):
+            for part in geom.geoms:
                 add_linestring_to_graph(part, risk, row)
 
     return G
@@ -973,7 +958,7 @@ def page_future_directions():
 
     col1, col2 = st.columns(2)
     with col1:
-        origin = st.text_input("Origin", placeholder="e.g. UBC Vancouver")
+        origin = st.text_input("Origin", placeholder="e.g. Kitsilano")
     with col2:
         destination = st.text_input("Destination", placeholder="e.g. Vancouver General Hospital")
 
